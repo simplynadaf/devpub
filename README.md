@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="assets/banner.png" alt="devpub banner" width="100%">
+
 # devpub
 
 **Write in your editor. Publish to Dev.to. Track what works.**
