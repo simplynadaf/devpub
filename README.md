@@ -236,7 +236,7 @@ If you discover a security vulnerability, please report it responsibly. See [SEC
 
 <div align="center">
 
-Made by [Sarvar Nadaf](https://dev.to/sarvar_04)
+Made by [Sarvar Nadaf](https://sarvarnadaf.com)
 
 If devpub saves you time, consider giving it a star.
 
