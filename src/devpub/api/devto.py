@@ -362,9 +362,11 @@ class DevtoClient:
     # --- Health ---
 
     def health_check(self) -> bool:
-        """Check if the API is reachable."""
+        """Check if the API is reachable and auth works."""
         try:
-            resp = self._request("GET", "/health_checks/app")
-            return resp.status_code == 200
-        except (APIError, httpx.HTTPError):
+            self.get_me()
+            return True
+        except APIError:
+            return False
+        except httpx.HTTPError:
             return False

@@ -51,23 +51,25 @@ def run_doctor():
     else:
         checks.append(("API key configured", False, "Not found"))
 
-    # Check 2: API reachable
+    # Check 2: API reachable + auth works
     if api_key:
         with DevtoClient(api_key) as client:
-            is_healthy = client.health_check()
-            checks.append(("Dev.to API reachable", is_healthy, ""))
-
-            # Check 3: Auth works
-            if is_healthy:
-                try:
-                    user = client.get_me()
-                    checks.append(
-                        ("Authentication valid", True, f"@{user.get('username', '?')}")
-                    )
-                except APIError as e:
+            try:
+                user = client.get_me()
+                checks.append(("Dev.to API reachable", True, ""))
+                checks.append(
+                    ("Authentication valid", True, f"@{user.get('username', '?')}")
+                )
+            except APIError as e:
+                if e.status_code == 401:
+                    checks.append(("Dev.to API reachable", True, ""))
                     checks.append(("Authentication valid", False, e.message[:50]))
-                except Exception as e:
-                    checks.append(("Authentication valid", False, str(e)[:50]))
+                else:
+                    checks.append(("Dev.to API reachable", False, e.message[:50]))
+                    checks.append(("Authentication valid", None, "Skipped"))
+            except Exception as e:
+                checks.append(("Dev.to API reachable", False, str(e)[:50]))
+                checks.append(("Authentication valid", None, "Skipped"))
     else:
         checks.append(("Dev.to API reachable", None, "Skipped (no key)"))
         checks.append(("Authentication valid", None, "Skipped (no key)"))

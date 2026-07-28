@@ -171,18 +171,20 @@ class TestUserEndpoints:
 class TestHealthCheck:
     @respx.mock
     def test_health_check_ok(self):
-        respx.get("https://dev.to/api/health_checks/app").mock(
-            return_value=httpx.Response(200)
+        respx.get("https://dev.to/api/users/me").mock(
+            return_value=httpx.Response(
+                200, json={"username": "test", "name": "Test"}
+            )
         )
         with DevtoClient(api_key="test-key") as client:
             assert client.health_check() is True
 
     @respx.mock
     def test_health_check_down(self):
-        respx.get("https://dev.to/api/health_checks/app").mock(
-            return_value=httpx.Response(503)
+        respx.get("https://dev.to/api/users/me").mock(
+            return_value=httpx.Response(401, json={"error": "unauthorized"})
         )
-        with DevtoClient(api_key="test-key") as client:
+        with DevtoClient(api_key="bad-key") as client:
             assert client.health_check() is False
 
 

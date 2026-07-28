@@ -23,13 +23,19 @@ def show_stats(
         with DevtoClient(api_key) as client:
             # Default: show totals
             totals = client.get_analytics_totals()
+
+            total_views = _extract_total(totals.get("page_views"))
+            total_reactions = _extract_total(totals.get("reactions"))
+            total_comments = _extract_total(totals.get("comments"))
+            total_followers = _extract_total(totals.get("follows"))
+
             console.print(
                 Panel(
                     f"[bold]Your Dev.to Stats[/]\n\n"
-                    f"  Views:     [cyan]{_format_num(totals.get('page_views', 0))}[/]\n"
-                    f"  Reactions: [cyan]{_format_num(totals.get('reactions', 0))}[/]\n"
-                    f"  Comments:  [cyan]{_format_num(totals.get('comments', 0))}[/]\n"
-                    f"  Followers: [cyan]{_format_num(totals.get('followers', 0))}[/]",
+                    f"  Views:     [cyan]{_format_num(total_views)}[/]\n"
+                    f"  Reactions: [cyan]{_format_num(total_reactions)}[/]\n"
+                    f"  Comments:  [cyan]{_format_num(total_comments)}[/]\n"
+                    f"  Followers: [cyan]{_format_num(total_followers)}[/]",
                     title="devpub stats",
                     border_style="blue",
                 )
@@ -55,15 +61,20 @@ def show_dashboard():
             # Totals
             totals = client.get_analytics_totals()
 
+            views = _extract_total(totals.get("page_views"))
+            reactions = _extract_total(totals.get("reactions"))
+            comments = _extract_total(totals.get("comments"))
+            followers = _extract_total(totals.get("follows"))
+
             console.print("\n[bold]Analytics Dashboard[/]\n")
 
             # Summary panel
             console.print(
                 Panel(
-                    f"  Views:     [cyan]{_format_num(totals.get('page_views', 0))}[/]\n"
-                    f"  Reactions: [cyan]{_format_num(totals.get('reactions', 0))}[/]\n"
-                    f"  Comments:  [cyan]{_format_num(totals.get('comments', 0))}[/]\n"
-                    f"  Followers: [cyan]{_format_num(totals.get('followers', 0))}[/]",
+                    f"  Views:     [cyan]{_format_num(views)}[/]\n"
+                    f"  Reactions: [cyan]{_format_num(reactions)}[/]\n"
+                    f"  Comments:  [cyan]{_format_num(comments)}[/]\n"
+                    f"  Followers: [cyan]{_format_num(followers)}[/]",
                     title="Lifetime Totals",
                     border_style="blue",
                 )
@@ -143,3 +154,16 @@ def _format_num(n: int) -> str:
     if n >= 1_000:
         return f"{n / 1_000:.1f}K"
     return str(n)
+
+
+def _extract_total(value) -> int:
+    """Extract total from an analytics field.
+
+    The Dev.to API returns nested dicts like {"total": 5000, ...}
+    for analytics fields, not flat integers.
+    """
+    if isinstance(value, dict):
+        return value.get("total", 0)
+    if isinstance(value, (int, float)):
+        return int(value)
+    return 0
