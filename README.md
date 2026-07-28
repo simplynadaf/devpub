@@ -1,15 +1,24 @@
 <div align="center">
 
-<img src="assets/banner.png" alt="devpub banner" width="100%">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/banner.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/banner.svg">
+  <img alt="devpub - Write in your editor. Publish to Dev.to. Track what works." src="assets/banner.svg" width="100%">
+</picture>
 
-# devpub
+<br><br>
 
-**Write in your editor. Publish to Dev.to. Track what works.**
+**The Dev.to CLI that uses 98% of the API. Competitors use 20%.**
 
 [![CI](https://github.com/simplynadaf/devpub/actions/workflows/test.yml/badge.svg)](https://github.com/simplynadaf/devpub/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![Status: Beta](https://img.shields.io/badge/status-beta-orange.svg)]()
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/simplynadaf/devpub/pulls)
+
+<br>
+
+[Getting Started](#quick-start) | [Commands](#commands) | [Configuration](#configuration) | [Contributing](#contributing) | [Roadmap](#roadmap)
 
 </div>
 
