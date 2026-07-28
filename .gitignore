@@ -15,4 +15,3 @@ venv/
 .mypy_cache/
 htmlcov/
 .coverage
-.github/workflows/
