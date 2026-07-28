@@ -1,0 +1,44 @@
+name: 'devpub Publish'
+description: 'Publish markdown articles to Dev.to on push or schedule'
+author: 'Sarvar Nadaf'
+
+branding:
+  icon: 'upload-cloud'
+  color: 'purple'
+
+inputs:
+  devto_api_key:
+    description: 'Your Dev.to API key'
+    required: true
+  articles_dir:
+    description: 'Directory containing your articles'
+    required: false
+    default: 'articles'
+  publish_on_merge:
+    description: 'Publish articles when PR is merged to main'
+    required: false
+    default: 'true'
+  draft_on_pr:
+    description: 'Create drafts when PR is opened'
+    required: false
+    default: 'false'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install devpub
+      shell: bash
+      run: pip install -e .
+
+    - name: Push articles
+      shell: bash
+      env:
+        DEVPUB_API_KEY: ${{ inputs.devto_api_key }}
+      run: |
+        cd ${{ github.workspace }}
+        devpub push --all
