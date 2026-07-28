@@ -3,7 +3,7 @@
 from rich.console import Console
 from rich.panel import Panel
 
-from devpub.api.devto import DevtoClient
+from devpub.api.devto import APIError, DevtoClient
 from devpub.core.config import ensure_api_key
 
 
@@ -12,17 +12,21 @@ def show_whoami():
     console = Console()
     api_key = ensure_api_key()
 
-    with DevtoClient(api_key) as client:
-        user = client.get_me()
+    try:
+        with DevtoClient(api_key) as client:
+            user = client.get_me()
+    except APIError as e:
+        console.print(f"[red]Error: {e.message}[/]")
+        return
 
     console.print(
         Panel(
             f"[bold]{user.get('name', 'Unknown')}[/] (@{user.get('username', '')})\n\n"
             f"  Articles:  {user.get('articles_count', '?')}\n"
             f"  Followers: {user.get('followers_count', '?')}\n"
-            f"  Website:   {user.get('website_url', '—')}\n"
-            f"  GitHub:    {user.get('github_username', '—')}\n"
-            f"  Joined:    {user.get('joined_at', '—')[:10] if user.get('joined_at') else '—'}",
+            f"  Website:   {user.get('website_url', '--')}\n"
+            f"  GitHub:    {user.get('github_username', '--')}\n"
+            f"  Joined:    {_safe_date(user.get('joined_at'))}",
             title="Your Dev.to Profile",
             border_style="blue",
         )
@@ -42,7 +46,8 @@ def run_doctor():
     api_key = config.get("api_key", "")
 
     if api_key:
-        checks.append(("API key configured", True, f"...{api_key[-4:]}"))
+        masked = f"...{api_key[-4:]}"
+        checks.append(("API key configured", True, masked))
     else:
         checks.append(("API key configured", False, "Not found"))
 
@@ -59,6 +64,8 @@ def run_doctor():
                     checks.append(
                         ("Authentication valid", True, f"@{user.get('username', '?')}")
                     )
+                except APIError as e:
+                    checks.append(("Authentication valid", False, e.message[:50]))
                 except Exception as e:
                     checks.append(("Authentication valid", False, str(e)[:50]))
     else:
@@ -90,4 +97,13 @@ def run_doctor():
     if all_good:
         console.print("\n[green]Everything looks good! Ready to use devpub.[/]")
     else:
-        console.print("\n[yellow]Some checks failed. Fix the issues above to get started.[/]")
+        console.print(
+            "\n[yellow]Some checks failed. Fix the issues above to get started.[/]"
+        )
+
+
+def _safe_date(value: str | None) -> str:
+    """Extract date portion safely."""
+    if not value:
+        return "--"
+    return value[:10]

@@ -1,6 +1,5 @@
 """Tests for sync logic."""
 
-
 import httpx
 import respx
 
@@ -11,8 +10,14 @@ from devpub.core.sync import _is_devpub_article, pull_articles, push_articles
 class TestIsDevpubArticle:
     def test_valid_article(self, tmp_path):
         filepath = tmp_path / "article.md"
-        save_article(filepath, {"title": "Test"}, "body")
+        save_article(filepath, {"title": "Test", "published": False}, "body")
         assert _is_devpub_article(filepath) is True
+
+    def test_missing_published_key(self, tmp_path):
+        """Files with title but no published key are NOT devpub articles."""
+        filepath = tmp_path / "readme.md"
+        save_article(filepath, {"title": "Just a title"}, "body")
+        assert _is_devpub_article(filepath) is False
 
     def test_plain_markdown(self, tmp_path):
         filepath = tmp_path / "readme.md"
@@ -49,6 +54,7 @@ class TestPushArticles:
 
         # Verify the file was updated with devto_id
         import frontmatter
+
         post = frontmatter.load(filepath)
         assert post.metadata["devto_id"] == 100
 
@@ -74,7 +80,7 @@ class TestPushArticles:
 
         push_articles(files=(str(filepath),))
 
-    def test_push_dry_run(self, tmp_path, monkeypatch, capsys):
+    def test_push_dry_run(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
         monkeypatch.setenv("DEVPUB_API_KEY", "test-key")
 
@@ -86,6 +92,24 @@ class TestPushArticles:
 
         push_articles(files=(str(filepath),), dry_run=True)
         # No API calls should be made in dry run
+
+    @respx.mock
+    def test_push_handles_api_error(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setenv("DEVPUB_API_KEY", "test-key")
+
+        filepath = tmp_path / "bad.md"
+        save_article(filepath, {
+            "title": "Bad Post",
+            "published": False,
+        }, "Content")
+
+        respx.post("https://dev.to/api/articles").mock(
+            return_value=httpx.Response(401, json={"error": "unauthorized"})
+        )
+
+        # Should not raise -- errors are caught and printed
+        push_articles(files=(str(filepath),))
 
 
 class TestPullArticles:
@@ -120,6 +144,7 @@ class TestPullArticles:
         assert filepath.exists()
 
         import frontmatter
+
         post = frontmatter.load(filepath)
         assert post.metadata["title"] == "My First Post"
         assert post.metadata["devto_id"] == 1
