@@ -18,13 +18,13 @@
 
 <br>
 
-[Getting Started](#quick-start) | [Commands](#commands) | [Configuration](#configuration) | [Contributing](#contributing) | [Roadmap](#roadmap)
+[Getting Started](#quick-start) | [Commands](#commands) | [Configuration](#configuration) | [Contributing](#contributing)
 
 </div>
 
 ---
 
-devpub is a command-line tool for developers who write on [Dev.to](https://dev.to). Write articles in your favorite editor, version control them with Git, publish with one command, and track analytics — all from the terminal.
+devpub is a command-line tool for developers who write on [Dev.to](https://dev.to). Write articles in your favorite editor, version control them with Git, publish with one command, and track analytics, all from the terminal.
 
 It uses 98% of the Dev.to API surface, including endpoints no other tool touches: semantic search, ML-powered content concepts, and full analytics.
 
@@ -53,7 +53,7 @@ cd devpub
 pip install -e .
 ```
 
-**With pip (coming soon):**
+**With pip (once published to PyPI):**
 
 ```bash
 pip install devpub
@@ -177,29 +177,6 @@ Your article content in Markdown...
 
 We follow [semantic versioning](https://semver.org/). Until v1.0, minor versions may include breaking changes (documented in CHANGELOG.md).
 
-## Roadmap
-
-### v0.2 (planned)
-
-- [ ] Scheduling: write now, publish later (`devpub schedule`)
-- [ ] GitHub Action for CI/CD publishing
-- [ ] `--graph` flag for time-series terminal charts
-- [ ] Activity heatmap display
-- [ ] Reading list export
-
-### v0.3 (planned)
-
-- [ ] Hashnode cross-posting
-- [ ] Image upload and URL rewriting
-- [ ] Article diff before push (show what changed)
-- [ ] Concepts API (ML-powered topic discovery)
-
-### v1.0
-
-- [ ] Stable CLI interface (no breaking changes after this)
-- [ ] Published on PyPI
-- [ ] Full documentation site
-
 ## Contributing
 
 We welcome contributions of all kinds. See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
@@ -215,11 +192,11 @@ pytest
 
 ### Ways to contribute
 
-- **Report bugs** — open an [issue](https://github.com/simplynadaf/devpub/issues/new?template=bug_report.md)
-- **Request features** — open an [issue](https://github.com/simplynadaf/devpub/issues/new?template=feature_request.md)
-- **Fix bugs** — check [good first issues](https://github.com/simplynadaf/devpub/labels/good%20first%20issue)
-- **Improve docs** — README, docstrings, examples
-- **Add tests** — especially for edge cases
+- **Report bugs** -- open an [issue](https://github.com/simplynadaf/devpub/issues/new?template=bug_report.md)
+- **Request features** -- open an [issue](https://github.com/simplynadaf/devpub/issues/new?template=feature_request.md)
+- **Fix bugs** -- check [good first issues](https://github.com/simplynadaf/devpub/labels/good%20first%20issue)
+- **Improve docs** -- README, docstrings, examples
+- **Add tests** -- especially for edge cases
 
 ### Before submitting a PR
 
