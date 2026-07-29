@@ -20,6 +20,12 @@
 
 [🚀 Getting Started](#-quick-start) | [📖 Commands](#-commands) | [⚙️ Configuration](#%EF%B8%8F-configuration) | [🤝 Contributing](#-contributing)
 
+<br>
+
+[![Watch the Demo](https://img.youtube.com/vi/u8H2BITfYjc/maxresdefault.jpg)](https://youtu.be/u8H2BITfYjc)
+
+📺 **[Watch the full demo on YouTube](https://youtu.be/u8H2BITfYjc)**
+
 </div>
 
 ---
