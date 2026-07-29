@@ -10,6 +10,7 @@
 
 **The Dev.to CLI that uses 98% of the API. Competitors use 20%.**
 
+[![PyPI](https://img.shields.io/pypi/v/devpub.svg)](https://pypi.org/project/devpub/)
 [![CI](https://github.com/simplynadaf/devpub/actions/workflows/test.yml/badge.svg)](https://github.com/simplynadaf/devpub/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
@@ -51,18 +52,16 @@ Existing Dev.to tools are either abandoned, broken, or only cover basic publishi
 
 ## 📦 Installation
 
-**From source (recommended during beta):**
+```bash
+pip install devpub
+```
+
+**From source:**
 
 ```bash
 git clone https://github.com/simplynadaf/devpub.git
 cd devpub
 pip install -e .
-```
-
-**With pip (once published to PyPI):**
-
-```bash
-pip install devpub
 ```
 
 **Requirements:** Python 3.10 or higher.
