@@ -304,13 +304,14 @@ def _render_bar_chart(
 
     # Summary line with peak marker
     total = sum(values)
-    peak_idx = values.index(max_val)
+    current_max = max(values)
+    peak_idx = values.index(current_max)
     peak_date = _short_date(labels[peak_idx]) if peak_idx < len(labels) else ""
 
     console.print(
         f"\n  Total: [bold]{_format_num(total)}[/] │ "
         f"Avg: [bold]{_format_num(avg_val)}[/]/day │ "
-        f"Peak: [bold yellow]{_format_num(max_val)}[/] [dim]▲ {peak_date}[/]"
+        f"Peak: [bold yellow]{_format_num(current_max)}[/] [dim]▲ {peak_date}[/]"
     )
 
 
