@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-08-20
+
+### Added
+
+- **Multi-period sparkline breakdown** below the chart showing 7d, 14d, 21d, and 30d trends at a glance
+- Each period shows its own sparkline, trend arrow, and total views
+
+### Fixed
+
+- Python 3.10 compatibility: fixed backslash-in-fstring SyntaxError that broke the PyPI package
+- Unicode box-drawing characters now use pre-assigned constants instead of inline escapes
+
 ## [0.2.0] - 2026-08-20
 
 ### Added
