@@ -6,6 +6,9 @@ from devpub.cli.analytics import (
     _format_num,
     _parse_period,
     _short_date,
+    _sparkline,
+    _trend_indicator,
+    _value_to_color,
 )
 
 
@@ -109,3 +112,86 @@ class TestDownsample:
         new_vals, new_labels = _downsample(values, labels, 5)
         assert new_vals == [100]
         assert new_labels == ["x"]
+
+
+class TestValueToColor:
+    def test_low_value(self):
+        color = _value_to_color(0.1)
+        assert color.startswith("rgb(50,")
+
+    def test_mid_value(self):
+        color = _value_to_color(0.5)
+        assert "200" in color
+
+    def test_high_value(self):
+        color = _value_to_color(0.8)
+        assert "220" in color
+
+    def test_peak_value(self):
+        color = _value_to_color(0.98)
+        assert color == "rgb(255,200,0)"
+
+    def test_zero(self):
+        color = _value_to_color(0.0)
+        assert color.startswith("rgb(50,")
+
+    def test_one(self):
+        color = _value_to_color(1.0)
+        assert color == "rgb(255,200,0)"
+
+
+class TestSparkline:
+    def test_basic(self):
+        result = _sparkline([0, 50, 100, 50, 0])
+        assert len(result) == 5
+        assert result[0] == "\u2581"
+        assert result[2] == "\u2588"
+
+    def test_all_same(self):
+        result = _sparkline([50, 50, 50])
+        assert len(result) == 3
+
+    def test_empty(self):
+        assert _sparkline([]) == ""
+
+    def test_single_value(self):
+        result = _sparkline([100])
+        assert len(result) == 1
+        assert result == "\u2588"
+
+    def test_zeros(self):
+        result = _sparkline([0, 0, 0])
+        assert len(result) == 3
+
+
+class TestTrendIndicator:
+    def test_trending_up(self):
+        values = [10, 10, 10, 10, 10, 10, 10, 50, 50, 50, 50, 50, 50, 50]
+        result = _trend_indicator(values)
+        assert "\u2197" in result
+        assert "+" in result
+
+    def test_trending_down(self):
+        values = [50, 50, 50, 50, 50, 50, 50, 10, 10, 10, 10, 10, 10, 10]
+        result = _trend_indicator(values)
+        assert "\u2198" in result
+
+    def test_stable(self):
+        values = [50, 50, 50, 50, 50, 50, 50, 51, 50, 50, 50, 50, 50, 50]
+        result = _trend_indicator(values)
+        assert "\u2192" in result
+
+    def test_short_data(self):
+        values = [10, 20, 30]
+        result = _trend_indicator(values)
+        assert isinstance(result, str)
+
+    def test_very_short_data(self):
+        values = [10, 20]
+        result = _trend_indicator(values)
+        assert result == ""
+
+    def test_previous_zero(self):
+        values = [0, 0, 0, 0, 0, 0, 0, 50, 50, 50, 50, 50, 50, 50]
+        result = _trend_indicator(values)
+        assert "new" in result

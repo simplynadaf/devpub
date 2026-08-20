@@ -11,7 +11,9 @@ from devpub.api.devto import APIError, DevtoClient
 from devpub.core.config import ensure_api_key
 
 # Characters for bar chart rendering (increasing height)
-BAR_CHARS = " ▁▂▃▄▅▆▇█"
+BAR_CHARS = " \u2581\u2582\u2583\u2584\u2585\u2586\u2587\u2588"
+# Sparkline characters (compact one-line trend)
+SPARK_CHARS = "\u2581\u2582\u2583\u2584\u2585\u2586\u2587\u2588"
 
 
 def show_stats(
@@ -149,7 +151,6 @@ def _show_graph(client: DevtoClient, console: Console, period: str = "30d"):
     dates = []
 
     if isinstance(data, dict) and _is_date_keyed(data):
-        # Dev.to V1 format: {"2026-07-04": {"page_views": {"total": 152}, ...}, ...}
         for date_key in sorted(data.keys()):
             entry = data[date_key]
             if isinstance(entry, dict):
@@ -166,7 +167,6 @@ def _show_graph(client: DevtoClient, console: Console, period: str = "30d"):
             daily_views.append(int(views))
             dates.append(entry.get("date", ""))
     elif isinstance(data, dict):
-        # Fallback: some API responses wrap data differently
         entries = data.get("data", data.get("historical", []))
         for entry in entries:
             views = entry.get("page_views", entry.get("views", 0))
@@ -189,10 +189,10 @@ def _render_bar_chart(
     values: list[int],
     labels: list[str],
     title: str = "Chart",
-    chart_height: int = 10,
-    chart_width: int = 60,
+    chart_height: int = 12,
+    chart_width: int = 50,
 ):
-    """Render a vertical bar chart in the terminal using Unicode block chars."""
+    """Render an enhanced vertical bar chart with color gradients, sparkline, and trend."""
     if not values:
         return
 
@@ -207,45 +207,63 @@ def _render_bar_chart(
     if len(values) > chart_width:
         values, labels = _downsample(values, labels, chart_width)
 
-    # Build the chart rows (top to bottom)
-    console.print(f"\n[bold]{title}[/]\n")
+    # Title with trend indicator
+    trend = _trend_indicator(values)
+    console.print(f"\n  [bold]{title}[/]  {trend}\n")
 
-    # Y-axis labels and bars
+    avg_val = sum(values) // len(values) if values else 0
+
+    # Y-axis labels and bars with color gradient
     for row in range(chart_height, 0, -1):
         line_parts = []
 
-        # Y-axis label (right-aligned)
+        # Y-axis label with tick marks
         if row == chart_height:
             y_label = _format_num(max_val)
+        elif row == int(chart_height * 0.75):
+            y_label = _format_num(int(max_val * 0.75))
         elif row == chart_height // 2:
             y_label = _format_num(max_val // 2)
-        elif row == 1:
-            y_label = _format_num(min_val) if min_val > 0 else "0"
+        elif row == int(chart_height * 0.25):
+            y_label = _format_num(int(max_val * 0.25))
         else:
             y_label = ""
 
-        line_parts.append(f"  {y_label:>6} │")
+        # Use box-drawing tick mark
+        tick = "\u2524" if y_label else "\u2502"
+        line_parts.append(f"  {y_label:>6} {tick}")
 
-        # Bar characters
-        for val in values:
+        # Average line row (closest row to avg value)
+        avg_row = int((avg_val / max_val) * chart_height) if max_val > 0 else 0
+        is_avg_row = row == avg_row and avg_row > 0
+
+        # Bar characters with color gradient
+        for idx, val in enumerate(values):
             ratio = val / max_val if max_val > 0 else 0
             bar_row_ratio = row / chart_height
+            color = _value_to_color(ratio)
 
             if ratio >= bar_row_ratio:
-                line_parts.append("[cyan]█[/]")
+                line_parts.append(f"[{color}]\u2588[/]")
             elif ratio >= (row - 1) / chart_height:
-                # Partial fill — use fractional block char
+                # Partial fill
                 frac = (ratio - (row - 1) / chart_height) * chart_height
                 char_idx = min(int(frac * (len(BAR_CHARS) - 1)), len(BAR_CHARS) - 1)
-                line_parts.append(f"[blue]{BAR_CHARS[char_idx]}[/]")
+                line_parts.append(f"[{color}]{BAR_CHARS[char_idx]}[/]")
+            elif is_avg_row:
+                line_parts.append("[dim]\u00b7[/]")
             else:
                 line_parts.append(" ")
 
+        # Average label on the right
+        if is_avg_row:
+            line_parts.append(f" [dim]\u2190 avg ({_format_num(avg_val)})[/]")
+
         console.print("".join(line_parts))
 
-    # X-axis
+    # X-axis with box-drawing
     bar_count = len(values)
-    console.print(f"  {'':>6} └{'─' * bar_count}")
+    console.print(f"  {'':>6} \u2514{'\u2500' * bar_count}")
 
     # X-axis labels (show first, middle, last)
     if labels and len(labels) >= 3:
@@ -261,15 +279,21 @@ def _render_bar_chart(
         x_axis += last
         console.print(f"[dim]{x_axis}[/]")
     elif labels:
-        console.print(f"[dim]  {'':>6}  {_short_date(labels[0])} → {_short_date(labels[-1])}[/]")
+        console.print(f"[dim]  {'':>6}  {_short_date(labels[0])} \u2192 {_short_date(labels[-1])}[/]")
 
-    # Summary line
+    # Sparkline with label
+    spark = _sparkline(values)
+    console.print(f"\n  [dim]trend:[/] {spark}")
+
+    # Summary line with peak marker
     total = sum(values)
-    avg = total // len(values) if values else 0
+    peak_idx = values.index(max_val)
+    peak_date = _short_date(labels[peak_idx]) if peak_idx < len(labels) else ""
+
     console.print(
-        f"\n  [dim]Total: {_format_num(total)} │ "
-        f"Avg/day: {_format_num(avg)} │ "
-        f"Peak: {_format_num(max_val)}[/]"
+        f"\n  Total: [bold]{_format_num(total)}[/] \u2502 "
+        f"Avg: [bold]{_format_num(avg_val)}[/]/day \u2502 "
+        f"Peak: [bold yellow]{_format_num(max_val)}[/] [dim]\u25b2 {peak_date}[/]"
     )
 
 
@@ -365,13 +389,69 @@ def _is_date_keyed(data: dict) -> bool:
     if not data:
         return False
     first_key = next(iter(data))
-    # Quick check: date keys look like YYYY-MM-DD
     return (
         isinstance(first_key, str)
         and len(first_key) >= 10
         and first_key[4] == "-"
         and first_key[7] == "-"
     )
+
+
+def _value_to_color(ratio: float) -> str:
+    """Map a 0-1 ratio to a Rich color string (blue -> cyan -> green -> gold)."""
+    if ratio < 0.25:
+        g = int(100 + ratio * 4 * 80)
+        return f"rgb(50,{g},220)"
+    elif ratio < 0.50:
+        r = int((ratio - 0.25) * 4 * 50)
+        return f"rgb({r},200,200)"
+    elif ratio < 0.75:
+        b = int(200 - (ratio - 0.50) * 4 * 150)
+        return f"rgb(0,210,{b})"
+    elif ratio < 0.95:
+        r = int((ratio - 0.75) * 5 * 200)
+        return f"rgb({r},220,50)"
+    else:
+        return "rgb(255,200,0)"
+
+
+def _sparkline(values: list[int]) -> str:
+    """Generate a compact sparkline string from values."""
+    if not values:
+        return ""
+    max_v = max(values) or 1
+    return "".join(
+        SPARK_CHARS[min(int(v / max_v * 7), 7)] for v in values
+    )
+
+
+def _trend_indicator(values: list[int]) -> str:
+    """Compare recent 7 days vs previous 7 days, return trend arrow + percentage."""
+    if len(values) < 14:
+        if len(values) >= 4:
+            recent = sum(values[-(len(values) // 2):])
+            previous = sum(values[:len(values) // 2])
+            if previous == 0:
+                return "[green]\u2197 new[/]"
+            pct = ((recent - previous) / previous) * 100
+            if pct > 5:
+                return f"[green]\u2197 +{pct:.0f}%[/]"
+            elif pct < -5:
+                return f"[red]\u2198 {pct:.0f}%[/]"
+            else:
+                return f"[dim]\u2192 {pct:+.0f}%[/]"
+        return ""
+    recent = sum(values[-7:])
+    previous = sum(values[-14:-7])
+    if previous == 0:
+        return "[green]\u2197 new[/]"
+    pct = ((recent - previous) / previous) * 100
+    if pct > 5:
+        return f"[green]\u2197 +{pct:.0f}%[/]"
+    elif pct < -5:
+        return f"[red]\u2198 {pct:.0f}%[/]"
+    else:
+        return f"[dim]\u2192 {pct:+.0f}%[/]"
 
 
 def _downsample(values: list[int], labels: list[str], target: int) -> tuple:
