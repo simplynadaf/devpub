@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "devpub"
-version = "0.2.0"
+version = "0.2.1"
 description = "Write in your editor. Publish to Dev.to. Track what works."
 readme = "README.md"
 license = {text = "MIT"}
@@ -53,6 +53,24 @@ Issues = "https://github.com/simplynadaf/devpub/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/devpub"]
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "demo/",
+    "tests/",
+    "*.mp4",
+    "*.webm",
+    "*.png",
+    "*.svg",
+    "node_modules/",
+    ".github/",
+    "BUILD-PLAN.md",
+    "RESEARCH.md",
+    "COMPETITIVE-ANALYSIS.md",
+    "COMPETITOR-PERFORMANCE.md",
+    "PROS-CONS-ANALYSIS.md",
+    "NEW-API-DISCOVERIES.md",
+]
 
 [tool.ruff]
 target-version = "py310"
