@@ -1,11 +1,17 @@
 """Analytics CLI commands for devpub."""
 
+import math
+from datetime import datetime, timedelta, timezone
+
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
 from devpub.api.devto import APIError, DevtoClient
 from devpub.core.config import ensure_api_key
+
+# Characters for bar chart rendering (increasing height)
+BAR_CHARS = " ▁▂▃▄▅▆▇█"
 
 
 def show_stats(
@@ -40,6 +46,9 @@ def show_stats(
                     border_style="blue",
                 )
             )
+
+            if graph:
+                _show_graph(client, console, period)
 
             if referrers:
                 _show_referrers(client, console)
@@ -115,6 +124,155 @@ def show_dashboard():
         console.print(f"[red]Error: {e.message}[/]")
 
 
+def _show_graph(client: DevtoClient, console: Console, period: str = "30d"):
+    """Render a terminal bar chart of views over time."""
+    # Parse period string (e.g., "7d", "30d", "90d")
+    days = _parse_period(period)
+    end = datetime.now(timezone.utc)
+    start = end - timedelta(days=days)
+
+    start_str = start.strftime("%Y-%m-%d")
+    end_str = end.strftime("%Y-%m-%d")
+
+    try:
+        data = client.get_analytics_historical(start=start_str, end=end_str)
+    except APIError as e:
+        console.print(f"[yellow]Could not fetch historical data: {e.message}[/]")
+        return
+
+    if not data:
+        console.print("[yellow]No historical data available for this period.[/]")
+        return
+
+    # Extract daily view counts
+    daily_views = []
+    dates = []
+
+    if isinstance(data, dict) and _is_date_keyed(data):
+        # Dev.to V1 format: {"2026-07-04": {"page_views": {"total": 152}, ...}, ...}
+        for date_key in sorted(data.keys()):
+            entry = data[date_key]
+            if isinstance(entry, dict):
+                views = entry.get("page_views", {})
+                if isinstance(views, dict):
+                    views = views.get("total", 0)
+                daily_views.append(int(views))
+                dates.append(date_key)
+    elif isinstance(data, list):
+        for entry in data:
+            views = entry.get("page_views", entry.get("views", 0))
+            if isinstance(views, dict):
+                views = views.get("total", 0)
+            daily_views.append(int(views))
+            dates.append(entry.get("date", ""))
+    elif isinstance(data, dict):
+        # Fallback: some API responses wrap data differently
+        entries = data.get("data", data.get("historical", []))
+        for entry in entries:
+            views = entry.get("page_views", entry.get("views", 0))
+            if isinstance(views, dict):
+                views = views.get("total", 0)
+            daily_views.append(int(views))
+            dates.append(entry.get("date", ""))
+
+    if not daily_views:
+        console.print("[yellow]No view data found in response.[/]")
+        return
+
+    # Render the chart
+    console.print()
+    _render_bar_chart(console, daily_views, dates, title=f"Views (last {days} days)")
+
+
+def _render_bar_chart(
+    console: Console,
+    values: list[int],
+    labels: list[str],
+    title: str = "Chart",
+    chart_height: int = 10,
+    chart_width: int = 60,
+):
+    """Render a vertical bar chart in the terminal using Unicode block chars."""
+    if not values:
+        return
+
+    max_val = max(values)
+    min_val = min(values)
+
+    if max_val == 0:
+        console.print(f"[dim]{title}: all values are zero[/]")
+        return
+
+    # If we have more data points than chart width, downsample
+    if len(values) > chart_width:
+        values, labels = _downsample(values, labels, chart_width)
+
+    # Build the chart rows (top to bottom)
+    console.print(f"\n[bold]{title}[/]\n")
+
+    # Y-axis labels and bars
+    for row in range(chart_height, 0, -1):
+        line_parts = []
+
+        # Y-axis label (right-aligned)
+        if row == chart_height:
+            y_label = _format_num(max_val)
+        elif row == chart_height // 2:
+            y_label = _format_num(max_val // 2)
+        elif row == 1:
+            y_label = _format_num(min_val) if min_val > 0 else "0"
+        else:
+            y_label = ""
+
+        line_parts.append(f"  {y_label:>6} │")
+
+        # Bar characters
+        for val in values:
+            ratio = val / max_val if max_val > 0 else 0
+            bar_row_ratio = row / chart_height
+
+            if ratio >= bar_row_ratio:
+                line_parts.append("[cyan]█[/]")
+            elif ratio >= (row - 1) / chart_height:
+                # Partial fill — use fractional block char
+                frac = (ratio - (row - 1) / chart_height) * chart_height
+                char_idx = min(int(frac * (len(BAR_CHARS) - 1)), len(BAR_CHARS) - 1)
+                line_parts.append(f"[blue]{BAR_CHARS[char_idx]}[/]")
+            else:
+                line_parts.append(" ")
+
+        console.print("".join(line_parts))
+
+    # X-axis
+    bar_count = len(values)
+    console.print(f"  {'':>6} └{'─' * bar_count}")
+
+    # X-axis labels (show first, middle, last)
+    if labels and len(labels) >= 3:
+        first = _short_date(labels[0])
+        mid = _short_date(labels[len(labels) // 2])
+        last = _short_date(labels[-1])
+
+        spacing = bar_count // 2
+        x_axis = f"  {'':>6}  {first}"
+        x_axis += " " * max(1, spacing - len(first) - len(mid) // 2)
+        x_axis += mid
+        x_axis += " " * max(1, spacing - len(mid) // 2 - len(last))
+        x_axis += last
+        console.print(f"[dim]{x_axis}[/]")
+    elif labels:
+        console.print(f"[dim]  {'':>6}  {_short_date(labels[0])} → {_short_date(labels[-1])}[/]")
+
+    # Summary line
+    total = sum(values)
+    avg = total // len(values) if values else 0
+    console.print(
+        f"\n  [dim]Total: {_format_num(total)} │ "
+        f"Avg/day: {_format_num(avg)} │ "
+        f"Peak: {_format_num(max_val)}[/]"
+    )
+
+
 def _show_referrers(client: DevtoClient, console: Console):
     """Show top traffic referrers."""
     try:
@@ -167,3 +325,64 @@ def _extract_total(value) -> int:
     if isinstance(value, (int, float)):
         return int(value)
     return 0
+
+
+def _parse_period(period: str) -> int:
+    """Parse a period string like '7d', '30d', '90d' into days."""
+    period = period.strip().lower()
+    if period.endswith("d"):
+        try:
+            return int(period[:-1])
+        except ValueError:
+            pass
+    elif period.endswith("w"):
+        try:
+            return int(period[:-1]) * 7
+        except ValueError:
+            pass
+    elif period.endswith("m"):
+        try:
+            return int(period[:-1]) * 30
+        except ValueError:
+            pass
+    # Default to 30 days
+    return 30
+
+
+def _short_date(date_str: str) -> str:
+    """Convert '2026-07-15' to 'Jul 15'."""
+    if not date_str or len(date_str) < 10:
+        return date_str or ""
+    try:
+        dt = datetime.strptime(date_str[:10], "%Y-%m-%d")
+        return dt.strftime("%b %d")
+    except ValueError:
+        return date_str[:10]
+
+
+def _is_date_keyed(data: dict) -> bool:
+    """Check if a dict uses date strings as keys (e.g., '2026-07-04')."""
+    if not data:
+        return False
+    first_key = next(iter(data))
+    # Quick check: date keys look like YYYY-MM-DD
+    return (
+        isinstance(first_key, str)
+        and len(first_key) >= 10
+        and first_key[4] == "-"
+        and first_key[7] == "-"
+    )
+
+
+def _downsample(values: list[int], labels: list[str], target: int) -> tuple:
+    """Reduce data points by averaging adjacent values."""
+    chunk_size = math.ceil(len(values) / target)
+    new_values = []
+    new_labels = []
+
+    for i in range(0, len(values), chunk_size):
+        chunk = values[i : i + chunk_size]
+        new_values.append(sum(chunk) // len(chunk))
+        new_labels.append(labels[i] if i < len(labels) else "")
+
+    return new_values, new_labels
