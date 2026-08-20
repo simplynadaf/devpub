@@ -215,7 +215,6 @@ def _render_bar_chart(
         return
 
     max_val = max(values)
-    min_val = min(values)
 
     if max_val == 0:
         console.print(f"[dim]{title}: all values are zero[/]")
