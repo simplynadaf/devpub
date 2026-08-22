@@ -107,6 +107,8 @@ devpub stats
 | `devpub pull` | Download your published articles from Dev.to |
 | `devpub pull --all` | Include drafts |
 | `devpub status` | Show sync state (local vs Dev.to) |
+| `devpub upload cover.png` | Upload images and get their Dev.to URLs |
+| `devpub upload *.png --markdown` | Print ready-to-paste Markdown image tags |
 
 ### 📊 Analytics
 
@@ -142,6 +144,24 @@ devpub looks for your API key in this order:
 3. Global: `~/.devpub/.env`
 
 🔑 Get your API key at: https://dev.to/settings/extensions
+
+### 🖼️ Image uploads
+
+`devpub upload` is the one command your API key cannot power: the Forem API V1 has
+no image endpoint, so devpub posts to the same session-authenticated endpoint the
+web editor uses. That needs two extra values:
+
+```bash
+DEVPUB_SESSION_COOKIE=...   # the _Devto_Forem_Session cookie
+DEVPUB_CSRF_TOKEN=...       # content of <meta name="csrf-token">
+```
+
+Both are visible in DevTools on https://dev.to/new while logged in. Run
+`devpub upload` once without them and it prints where to click.
+
+> ⚠️ These are login credentials, not a scoped key. Keep them in `.devpub/.env`
+> (gitignored by `devpub init`) and expect to re-copy them when they expire --
+> uploads start failing with a 401 or 403 when they do.
 
 ### 📁 Project Structure
 

@@ -29,6 +29,9 @@ def get_config() -> dict:
     1. Environment variables (DEVPUB_API_KEY, DEVTO_API_KEY)
     2. Project .env file (.devpub/.env)
     3. Global .env file (~/.devpub/.env)
+
+    Image uploads additionally read DEVPUB_SESSION_COOKIE and DEVPUB_CSRF_TOKEN,
+    since the upload endpoint is session-authenticated rather than key-authenticated.
     """
     # Load global .env
     global_env = Path.home() / DEVPUB_DIR / ENV_FILE
@@ -54,9 +57,17 @@ def get_config() -> dict:
         or ""
     )
 
+    session_cookie = (
+        os.getenv("DEVPUB_SESSION_COOKIE") or os.getenv("DEVTO_SESSION_COOKIE") or ""
+    )
+    csrf_token = os.getenv("DEVPUB_CSRF_TOKEN") or os.getenv("DEVTO_CSRF_TOKEN") or ""
+
     return {
         "api_key": api_key,
         "api_url": os.getenv("DEVPUB_API_URL", "https://dev.to/api"),
+        "site_url": os.getenv("DEVPUB_SITE_URL", "https://dev.to"),
+        "session_cookie": session_cookie,
+        "csrf_token": csrf_token,
         "project_root": str(project_root) if project_root else None,
     }
 
@@ -87,3 +98,42 @@ def ensure_api_key() -> str:
         raise SystemExit(1)
 
     return api_key
+
+
+def ensure_session_credentials() -> tuple[str, str]:
+    """Get the session cookie and CSRF token, or explain how to obtain them.
+
+    Image uploads cannot use the API key: Forem's API V1 has no image endpoint,
+    so devpub posts to the same session-authenticated endpoint the editor uses.
+    """
+    config = get_config()
+    session_cookie = config.get("session_cookie", "")
+    csrf_token = config.get("csrf_token", "")
+
+    if session_cookie and csrf_token:
+        return session_cookie, csrf_token
+
+    from rich.console import Console
+    from rich.panel import Panel
+
+    console = Console()
+    console.print(
+        Panel(
+            "[bold red]No Dev.to session credentials found![/]\n\n"
+            "Uploading images needs a browser session, not an API key -- the\n"
+            "Forem API has no image endpoint.\n\n"
+            "[bold]To get them:[/]\n"
+            "  1. Open [link]https://dev.to/new[/] while logged in\n"
+            "  2. DevTools -> Application -> Cookies -> copy [cyan]_Devto_Forem_Session[/]\n"
+            "  3. DevTools -> Elements -> copy the [cyan]content[/] of\n"
+            "     [dim]<meta name=\"csrf-token\">[/]\n\n"
+            "Then add them to [cyan].devpub/.env[/]:\n"
+            "  [dim]DEVPUB_SESSION_COOKIE=...[/]\n"
+            "  [dim]DEVPUB_CSRF_TOKEN=...[/]\n\n"
+            "[yellow]These are login credentials -- keep them out of version control.[/]\n"
+            "They expire; re-copy them when uploads start failing with 401/403.",
+            title="Session Required",
+            border_style="red",
+        )
+    )
+    raise SystemExit(1)

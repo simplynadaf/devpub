@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`devpub upload`** -- upload images to Dev.to and get their public URLs, so a
+  post with figures can be written and published without opening the web editor.
+  Supports `--markdown` to print ready-to-paste image tags.
+- Session-based credentials (`DEVPUB_SESSION_COOKIE`, `DEVPUB_CSRF_TOKEN`) for the
+  upload endpoint, which is session-authenticated rather than API-key-authenticated.
+
 ## [0.2.1] - 2026-08-20
 
 ### Added
