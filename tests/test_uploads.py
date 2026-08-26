@@ -58,12 +58,27 @@ class TestUploaderInit:
         assert headers["Referer"].startswith("https://dev.to")
 
     def test_headers_include_user_agent(self):
+        from importlib.metadata import version
+
         with uploader() as up:
-            assert "devpub" in up._headers()["User-Agent"]
+            ua = up._headers()["User-Agent"]
+        assert ua == f"devpub/{version('devpub')} (https://github.com/simplynadaf/devpub)"
 
     def test_bare_cookie_value_is_named(self):
         with uploader() as up:
             assert up._cookies() == {SESSION_COOKIE_NAME: "session-value"}
+
+    def test_bare_base64_value_with_padding_is_not_split(self):
+        # A base64 session value carries '=' padding but no ';'. It must be
+        # treated as one value, not parsed as a name=value pair.
+        raw = "eyJhbGciOiJ9.abc123=="
+        with ImageUploader(session_cookie=raw, csrf_token="c") as up:
+            assert up._cookies() == {SESSION_COOKIE_NAME: raw}
+
+    def test_single_name_value_pair_is_unwrapped(self):
+        raw = f"{SESSION_COOKIE_NAME}=abc123=="
+        with ImageUploader(session_cookie=raw, csrf_token="c") as up:
+            assert up._cookies() == {SESSION_COOKIE_NAME: "abc123=="}
 
     def test_pasted_cookie_header_is_parsed(self):
         raw = f"ahoy_visitor=xyz; {SESSION_COOKIE_NAME}=abc123; client_id=q"

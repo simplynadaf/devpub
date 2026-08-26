@@ -12,6 +12,8 @@ it can change without notice, and a failure here should never be fatal to a push
 
 import mimetypes
 from http.cookies import SimpleCookie
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as _pkg_version
 from pathlib import Path
 from typing import Any
 
@@ -19,6 +21,17 @@ import httpx
 
 from devpub.api.devto import APIError
 from devpub.core.config import get_config
+
+
+def _user_agent() -> str:
+    """Build the User-Agent from the installed package version so it never
+    drifts from `pyproject.toml`."""
+    try:
+        ver = _pkg_version("devpub")
+    except PackageNotFoundError:  # running from source without an install
+        ver = "0.0.0"
+    return f"devpub/{ver} (https://github.com/simplynadaf/devpub)"
+
 
 SITE_URL = "https://dev.to"
 UPLOAD_PATH = "/image_uploads"
@@ -62,7 +75,7 @@ class ImageUploader:
             "Accept": "*/*",
             "Origin": self.site_url,
             "Referer": f"{self.site_url}/new",
-            "User-Agent": "devpub/0.2.1 (https://github.com/simplynadaf/devpub)",
+            "User-Agent": _user_agent(),
         }
         if self.csrf_token:
             headers["X-CSRF-Token"] = self.csrf_token
@@ -73,11 +86,19 @@ class ImageUploader:
 
         Copying one value out of devtools is easy to get wrong, so a pasted
         ``a=1; b=2`` string is parsed rather than rejected.
+
+        A multi-cookie header always contains ``;``; a bare value never does.
+        We key off ``;`` rather than ``=`` because base64 session values carry
+        ``=`` padding and would otherwise be misparsed as a name=value pair.
         """
         raw = self.session_cookie.strip()
         if not raw:
             return {}
-        if "=" not in raw:
+        if ";" not in raw:
+            # A lone value, possibly pasted as "<name>=<value>".
+            prefix = f"{SESSION_COOKIE_NAME}="
+            if raw.startswith(prefix):
+                return {SESSION_COOKIE_NAME: raw[len(prefix):]}
             return {SESSION_COOKIE_NAME: raw}
 
         jar = SimpleCookie()
@@ -117,7 +138,13 @@ class ImageUploader:
         return self._extract_url(resp, file_path)
 
     def upload_many(self, paths) -> list[tuple[Path, str]]:
-        """Upload several images, preserving input order."""
+        """Upload several images, preserving input order.
+
+        Fail-fast: raises ``APIError`` on the first failure and does not
+        continue. The ``devpub upload`` CLI does not use this; it uploads
+        one-by-one so it can report per-file success/failure and keep going.
+        Use this only when you want all-or-nothing behaviour.
+        """
         return [(Path(p).expanduser(), self.upload(p)) for p in paths]
 
     @staticmethod
