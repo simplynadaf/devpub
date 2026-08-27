@@ -1,11 +1,22 @@
 """Dev.to (Forem) API client for devpub."""
 
 import time
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as _pkg_version
 from typing import Any
 
 import httpx
 
 from devpub.core.config import get_config
+
+
+def _user_agent() -> str:
+    """Build User-Agent from installed package version."""
+    try:
+        ver = _pkg_version("devpub")
+    except PackageNotFoundError:
+        ver = "0.0.0"
+    return f"devpub/{ver} (https://github.com/simplynadaf/devpub)"
 
 API_BASE_URL = "https://dev.to/api"
 API_V1_ACCEPT = "application/vnd.forem.api-v1+json"
@@ -29,7 +40,7 @@ class DevtoClient:
 
     def __init__(self, api_key: str | None = None):
         config = get_config()
-        self.api_key = api_key or config.get("api_key", "")
+        self.api_key = api_key if api_key is not None else config.get("api_key", "")
         self.base_url = config.get("api_url", API_BASE_URL)
         self._client: httpx.Client | None = None
         self._request_timestamps: list[float] = []
@@ -48,7 +59,7 @@ class DevtoClient:
         headers = {
             "Accept": API_V1_ACCEPT,
             "Content-Type": "application/json",
-            "User-Agent": "devpub/0.1.0 (https://github.com/simplynadaf/devpub)",
+            "User-Agent": _user_agent(),
         }
         if self.api_key:
             headers["api-key"] = self.api_key

@@ -15,3 +15,32 @@ venv/
 .mypy_cache/
 htmlcov/
 .coverage
+
+# Binary/media files (recordings, demos)
+*.mp4
+*.webm
+*.cast
+*.wav
+*.mp3
+
+# Working/research documents (local only)
+BUILD-PLAN.md
+RESEARCH.md
+COMPETITIVE-ANALYSIS.md
+COMPETITOR-PERFORMANCE.md
+PROS-CONS-ANALYSIS.md
+NEW-API-DISCOVERIES.md
+ENHANCED-GRAPH-RESEARCH.md
+DEEP-RESEARCH-*.md
+WEEKLY-*.md
+SERIES-PLAN.md
+
+# Demo/recording artifacts
+demo-video/
+releases/
+upcoming-features/
+record-*.py
+
+# Draft articles (use devpub push to publish, don't commit)
+articles/*.md
+!articles/.gitkeep
