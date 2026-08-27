@@ -25,7 +25,7 @@
 
 [![Watch the Demo](https://img.youtube.com/vi/u8H2BITfYjc/maxresdefault.jpg)](https://youtu.be/u8H2BITfYjc)
 
-📺 **[Watch the full demo on YouTube](https://youtu.be/u8H2BITfYjc)**
+📺 **[Watch the full demo on YouTube](https://youtu.be/u8H2BITfYjc)** | 📝 **[Read the article series on Dev.to](https://dev.to/sarvar_04/series/43439)**
 
 </div>
 
