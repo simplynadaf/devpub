@@ -16,6 +16,7 @@ def cli(ctx):
     Already writing?    devpub pull
     Want to grow?       devpub stats
     Ready to publish?   devpub push
+    Got images?         devpub upload
     """
     ctx.ensure_object(dict)
 
@@ -59,6 +60,25 @@ def pull(pull_all, folder):
     from devpub.core.sync import pull_articles
 
     pull_articles(pull_all=pull_all, folder=folder)
+
+
+@cli.command()
+@click.argument("files", nargs=-1, type=click.Path())
+@click.option(
+    "--markdown", "-m", is_flag=True, help="Print Markdown image tags instead of a table."
+)
+def upload(files, markdown):
+    """Upload images to Dev.to and get their URLs.
+
+    \b
+    The Forem API has no image endpoint, so this uses the same
+    session-authenticated endpoint as the web editor. It needs
+    DEVPUB_SESSION_COOKIE and DEVPUB_CSRF_TOKEN rather than your API key --
+    run it once without them for instructions on where to find them.
+    """
+    from devpub.cli.images import upload_images
+
+    upload_images(files=files, markdown=markdown)
 
 
 @cli.command()
