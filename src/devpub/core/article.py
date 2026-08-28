@@ -221,9 +221,11 @@ def article_to_api_payload(article: dict) -> dict:
         "published": article["published"],
     }
 
-    if article.get("tags"):
-        tags = article["tags"]
-        payload["tags"] = tags if isinstance(tags, str) else ", ".join(tags)
+    tags = _parse_tags(article.get("tags"))
+    if tags:
+        # Dev.to expects an array of tags; a comma-joined string is accepted
+        # by the API but silently produces an empty tag_list on the article.
+        payload["tags"] = tags
     if article.get("description"):
         payload["description"] = article["description"]
     if article.get("series"):

@@ -117,12 +117,40 @@ class TestArticleToApiPayload:
         payload = article_to_api_payload(article)
         assert payload["title"] == "Full Post"
         assert payload["published"] is True
-        assert payload["tags"] == "python, tutorial"
+        assert payload["tags"] == ["python", "tutorial"]
         assert payload["description"] == "A full article"
         assert payload["series"] == "My Series"
         assert payload["canonical_url"] == "https://myblog.com/post"
         assert payload["main_image"] == "https://img.com/cover.png"
         assert payload["organization_id"] == 42
+
+
+class TestPayloadTags:
+    """Dev.to expects `tags` as an array; a comma-joined string is silently
+    dropped, leaving the published article with no tags."""
+
+    def test_list_is_sent_as_array(self):
+        payload = article_to_api_payload(
+            {"title": "T", "body": "B", "published": False, "tags": ["a", "b"]}
+        )
+        assert payload["tags"] == ["a", "b"]
+
+    def test_comma_string_is_split_into_array(self):
+        payload = article_to_api_payload(
+            {"title": "T", "body": "B", "published": False, "tags": "python, tutorial"}
+        )
+        assert payload["tags"] == ["python", "tutorial"]
+
+    def test_empty_tags_are_omitted(self):
+        for empty in ([], "", "  ", None):
+            payload = article_to_api_payload(
+                {"title": "T", "body": "B", "published": False, "tags": empty}
+            )
+            assert "tags" not in payload
+
+    def test_no_tags_key_is_omitted(self):
+        payload = article_to_api_payload({"title": "T", "body": "B", "published": False})
+        assert "tags" not in payload
 
 
 class TestCreateArticle:
