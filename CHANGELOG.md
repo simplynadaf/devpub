@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-08-28
+
+### Added
+
+- `devpub upload --json` prints a machine-readable result object (`uploaded` /
+  `failed` arrays) to stdout for scripting; human output goes to stderr and the
+  command exits non-zero if any file failed. Mutually exclusive with `--markdown`.
+
+### Fixed
+
+- `devpub push` now sends `tags` as an array. It was joining them into a
+  comma-separated string, which Dev.to accepts but silently drops, publishing
+  articles with no tags.
+
 ## [0.3.0] - 2026-08-27
 
 ### Added

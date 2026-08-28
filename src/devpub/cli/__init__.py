@@ -67,7 +67,10 @@ def pull(pull_all, folder):
 @click.option(
     "--markdown", "-m", is_flag=True, help="Print Markdown image tags instead of a table."
 )
-def upload(files, markdown):
+@click.option(
+    "--json", "as_json", is_flag=True, help="Print a JSON result object (for scripting)."
+)
+def upload(files, markdown, as_json):
     """Upload images to Dev.to and get their URLs.
 
     \b
@@ -76,9 +79,12 @@ def upload(files, markdown):
     DEVPUB_SESSION_COOKIE and DEVPUB_CSRF_TOKEN rather than your API key --
     run it once without them for instructions on where to find them.
     """
+    if markdown and as_json:
+        raise click.UsageError("--markdown and --json are mutually exclusive.")
+
     from devpub.cli.images import upload_images
 
-    upload_images(files=files, markdown=markdown)
+    upload_images(files=files, markdown=markdown, as_json=as_json)
 
 
 @cli.command()
