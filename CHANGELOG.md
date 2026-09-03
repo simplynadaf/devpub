@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`devpub comments <article_id>`** -- read the threaded comments on a Dev.to
+  article directly in the terminal. Replies are shown nested under their
+  parent, with the author, date, and comment `id_code`. Read-only (uses the
+  API-key/public `GET /comments` endpoint); posting replies is not yet
+  supported because the Forem V1 API exposes no comment write endpoint.
+
 ## [0.3.0] - 2026-08-27
 
 ### Added

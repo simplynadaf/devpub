@@ -155,6 +155,71 @@ class TestTrendsEndpoints:
         assert result[0]["name"] == "AI"
 
 
+class TestCommentsEndpoints:
+    @respx.mock
+    def test_get_comments(self):
+        tree = [
+            {
+                "type_of": "comment",
+                "id_code": "1a2b",
+                "body_html": "<p>Great post!</p>",
+                "created_at": "2026-09-01T10:00:00Z",
+                "user": {"username": "reader1", "name": "Reader One"},
+                "children": [
+                    {
+                        "type_of": "comment",
+                        "id_code": "3c4d",
+                        "body_html": "<p>Agreed.</p>",
+                        "created_at": "2026-09-01T11:00:00Z",
+                        "user": {"username": "reader2"},
+                        "children": [],
+                    }
+                ],
+            }
+        ]
+        respx.get("https://dev.to/api/comments").mock(
+            return_value=httpx.Response(200, json=tree)
+        )
+        with DevtoClient(api_key="test-key") as client:
+            result = client.get_comments(12345)
+        assert result[0]["id_code"] == "1a2b"
+        assert result[0]["children"][0]["id_code"] == "3c4d"
+
+    @respx.mock
+    def test_get_comments_passes_article_id(self):
+        route = respx.get("https://dev.to/api/comments").mock(
+            return_value=httpx.Response(200, json=[])
+        )
+        with DevtoClient(api_key="test-key") as client:
+            client.get_comments(999, page=2, per_page=10)
+        assert route.called
+        request = route.calls.last.request
+        assert request.url.params["a_id"] == "999"
+        assert request.url.params["page"] == "2"
+        assert request.url.params["per_page"] == "10"
+
+    @respx.mock
+    def test_get_comment_by_id_code(self):
+        respx.get("https://dev.to/api/comments/1a2b").mock(
+            return_value=httpx.Response(
+                200, json={"id_code": "1a2b", "body_html": "<p>Hi</p>", "children": []}
+            )
+        )
+        with DevtoClient(api_key="test-key") as client:
+            result = client.get_comment("1a2b")
+        assert result["id_code"] == "1a2b"
+
+    @respx.mock
+    def test_get_comments_404(self):
+        respx.get("https://dev.to/api/comments").mock(
+            return_value=httpx.Response(404, json={"error": "not found"})
+        )
+        with DevtoClient(api_key="test-key") as client:
+            with pytest.raises(APIError) as exc_info:
+                client.get_comments(404404)
+        assert exc_info.value.status_code == 404
+
+
 class TestUserEndpoints:
     @respx.mock
     def test_get_me(self):

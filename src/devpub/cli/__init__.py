@@ -146,6 +146,24 @@ def search(query, semantic, limit):
 
 
 @cli.command()
+@click.argument("article_id", type=int)
+@click.option("--page", "-p", default=1, help="Page of top-level comments.")
+@click.option("--limit", "-l", default=30, help="Top-level comments per page.")
+def comments(article_id, page, limit):
+    """Read the threaded comments on a Dev.to article.
+
+    \b
+    Pass the numeric article ID (see `devpub status` or a pulled article's
+    devto_id). Replies are shown nested under their parent. This is read-only:
+    posting replies is not yet supported because the Forem API has no comment
+    write endpoint.
+    """
+    from devpub.cli.comments import show_comments
+
+    show_comments(article_id=article_id, page=page, limit=limit)
+
+
+@cli.command()
 def whoami():
     """Show your Dev.to profile info."""
     from devpub.cli.utils import show_whoami
