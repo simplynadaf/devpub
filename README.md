@@ -126,6 +126,7 @@ devpub stats
 | `devpub trends` | Trending topics on Dev.to right now |
 | `devpub search "query"` | Keyword search for articles |
 | `devpub search "query" --semantic` | AI-powered search by meaning (not just keywords) |
+| `devpub comments <article_id>` | Read the threaded comments on an article (read-only) |
 
 ### 🔧 Utilities
 

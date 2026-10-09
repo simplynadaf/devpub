@@ -354,6 +354,31 @@ class DevtoClient:
         )
         return resp.json()
 
+    # --- Comments ---
+
+    def get_comments(self, article_id: int, page: int = 1, per_page: int = 30) -> list[dict]:
+        """Get comments for an article as a threaded tree.
+
+        Each top-level comment carries its replies nested under ``children``.
+        The ``page`` parameter paginates top-level comments only; replies to
+        those comments are always returned inline regardless of page.
+        """
+        resp = self._request(
+            "GET",
+            "/comments",
+            params={"a_id": article_id, "page": page, "per_page": per_page},
+        )
+        return resp.json()
+
+    def get_comment(self, id_code: str) -> dict:
+        """Get a single comment and its nested replies by its ``id_code``.
+
+        Note the identifier is the alpha-numeric ``id_code`` (e.g. ``1a2b``),
+        not a numeric database ID.
+        """
+        resp = self._request("GET", f"/comments/{id_code}")
+        return resp.json()
+
     # --- Reading List ---
 
     def get_readinglist(self, page: int = 1, per_page: int = 30) -> list[dict]:
